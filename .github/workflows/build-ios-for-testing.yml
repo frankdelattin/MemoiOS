@@ -42,9 +42,9 @@ jobs:
         echo "Starting iOS build..."
         flutter build ios --debug --no-codesign --verbose
         
-        # Check if build actually succeeded by looking for build directory
-        if [ ! -d "ios/build" ]; then
-          echo "❌ iOS build failed - no build directory created"
+        # Check if build actually succeeded by looking for Runner.app
+        if [ ! -d "build/ios/Debug-iphoneos/Runner.app" ] && [ ! -d "build/ios/iphoneos/Runner.app" ]; then
+          echo "❌ iOS build failed - no Runner.app created"
           echo "Checking for common iOS build issues..."
           
           # Check if iOS project exists
@@ -61,7 +61,7 @@ jobs:
           fi
           
           # Final check
-          if [ ! -d "ios/build" ]; then
+          if [ ! -d "build/ios/Debug-iphoneos/Runner.app" ] && [ ! -d "build/ios/iphoneos/Runner.app" ]; then
             echo "❌ iOS build still failed after pod install"
             exit 1
           fi
@@ -72,26 +72,30 @@ jobs:
     - name: Verify build output and create archive
       run: |
         echo "Checking build output directories..."
-        find ios -name "Runner.app" -type d || echo "Runner.app not found"
-        ls -la ios/build/ || echo "ios/build not found"
+        find . -name "Runner.app" -type d || echo "Runner.app not found"
+        ls -la build/ || echo "build/ not found"
         
         # Check different possible locations for Runner.app
-        if [ -d "ios/build/ios/iphoneos/Runner.app" ]; then
+        if [ -d "build/ios/Debug-iphoneos/Runner.app" ]; then
+          echo "Found Runner.app in build/ios/Debug-iphoneos/"
+          cd build/ios/Debug-iphoneos
+          zip -r SnappApp-iOS-Debug.zip Runner.app
+        elif [ -d "build/ios/iphoneos/Runner.app" ]; then
+          echo "Found Runner.app in build/ios/iphoneos/"
+          cd build/ios/iphoneos
+          zip -r SnappApp-iOS-Debug.zip Runner.app
+        elif [ -d "ios/build/ios/iphoneos/Runner.app" ]; then
           echo "Found Runner.app in ios/build/ios/iphoneos/"
           cd ios/build/ios/iphoneos
           zip -r SnappApp-iOS-Debug.zip Runner.app
-        elif [ -d "ios/build/ios/iphonesimulator/Runner.app" ]; then
-          echo "Found Runner.app in ios/build/ios/iphonesimulator/"
-          cd ios/build/ios/iphonesimulator
-          zip -r SnappApp-iOS-Debug.zip Runner.app
-        elif [ -d "ios/build/Runner.app" ]; then
-          echo "Found Runner.app in ios/build/"
-          cd ios/build
+        elif [ -d "build/ios/iphonesimulator/Runner.app" ]; then
+          echo "Found Runner.app in build/ios/iphonesimulator/"
+          cd build/ios/iphonesimulator
           zip -r SnappApp-iOS-Debug.zip Runner.app
         else
           echo "❌ Runner.app not found in any expected location"
           echo "Available directories:"
-          find ios -name "*.app" -type d || echo "No .app directories found"
+          find . -name "*.app" -type d || echo "No .app directories found"
           exit 1
         fi
         
