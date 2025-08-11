@@ -39,7 +39,35 @@ jobs:
         
     - name: Build iOS app (debug, no codesign)
       run: |
+        echo "Starting iOS build..."
         flutter build ios --debug --no-codesign --verbose
+        
+        # Check if build actually succeeded by looking for build directory
+        if [ ! -d "ios/build" ]; then
+          echo "❌ iOS build failed - no build directory created"
+          echo "Checking for common iOS build issues..."
+          
+          # Check if iOS project exists
+          if [ ! -f "ios/Runner.xcodeproj/project.pbxproj" ]; then
+            echo "❌ iOS project files missing"
+          fi
+          
+          # Check for CocoaPods issues
+          if [ ! -f "ios/Podfile.lock" ]; then
+            echo "⚠️ Podfile.lock missing - running pod install"
+            cd ios && pod install && cd ..
+            echo "Retrying iOS build after pod install..."
+            flutter build ios --debug --no-codesign --verbose
+          fi
+          
+          # Final check
+          if [ ! -d "ios/build" ]; then
+            echo "❌ iOS build still failed after pod install"
+            exit 1
+          fi
+        fi
+        
+        echo "✅ iOS build completed successfully"
         
     - name: Verify build output and create archive
       run: |
