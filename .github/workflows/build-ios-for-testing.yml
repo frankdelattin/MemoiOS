@@ -41,10 +41,31 @@ jobs:
       run: |
         flutter build ios --debug --no-codesign --verbose
         
-    - name: Create iOS app archive
+    - name: Verify build output and create archive
       run: |
-        cd ios/build/ios/iphoneos
-        zip -r SnappApp-iOS-Debug.zip Runner.app
+        echo "Checking build output directories..."
+        find ios -name "Runner.app" -type d || echo "Runner.app not found"
+        ls -la ios/build/ || echo "ios/build not found"
+        
+        # Check different possible locations for Runner.app
+        if [ -d "ios/build/ios/iphoneos/Runner.app" ]; then
+          echo "Found Runner.app in ios/build/ios/iphoneos/"
+          cd ios/build/ios/iphoneos
+          zip -r SnappApp-iOS-Debug.zip Runner.app
+        elif [ -d "ios/build/ios/iphonesimulator/Runner.app" ]; then
+          echo "Found Runner.app in ios/build/ios/iphonesimulator/"
+          cd ios/build/ios/iphonesimulator
+          zip -r SnappApp-iOS-Debug.zip Runner.app
+        elif [ -d "ios/build/Runner.app" ]; then
+          echo "Found Runner.app in ios/build/"
+          cd ios/build
+          zip -r SnappApp-iOS-Debug.zip Runner.app
+        else
+          echo "❌ Runner.app not found in any expected location"
+          echo "Available directories:"
+          find ios -name "*.app" -type d || echo "No .app directories found"
+          exit 1
+        fi
         
     - name: Upload iOS app artifact
       uses: actions/upload-artifact@v4
