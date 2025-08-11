@@ -24,9 +24,22 @@ jobs:
     - name: Get dependencies
       run: flutter pub get
       
+    - name: Generate ObjectBox files
+      run: |
+        dart run build_runner build --delete-conflicting-outputs
+        
+    - name: Download ONNX models and tokenizer
+      run: |
+        mkdir -p assets/models/tokenizers
+        curl -L -o assets/models/nlp_visualize_opset3.onnx https://clip-as-service.s3.us-east-2.amazonaws.com/models/onnx/ViT-B-32/visual.onnx
+        curl -L -o assets/models/nlp_visualize.onnx https://clip-as-service.s3.us-east-2.amazonaws.com/models/onnx/ViT-B-32/visual.onnx
+        curl -L -o assets/models/nlp_textual_opset3.onnx https://clip-as-service.s3.us-east-2.amazonaws.com/models/onnx/ViT-B-32/textual.onnx
+        curl -L -o assets/models/nlp_textual.onnx https://clip-as-service.s3.us-east-2.amazonaws.com/models/onnx/ViT-B-32/textual.onnx
+        curl -L -o assets/models/tokenizers/nlp_textual_tokenizer.txt.gz https://github.com/openai/CLIP/raw/main/clip/bpe_simple_vocab_16e6.txt.gz
+        
     - name: Build iOS app (debug, no codesign)
       run: |
-        flutter build ios --debug --no-codesign
+        flutter build ios --debug --no-codesign --verbose
         
     - name: Create iOS app archive
       run: |
