@@ -1,0 +1,51 @@
+{
+  "test_execution_steps": [
+    {
+      "step": 1,
+      "action": "inject_initial_photos",
+      "scenario": "scenario_1_baseline",
+      "description": "Inject 5 initial photos into iOS simulator gallery",
+      "validation": [
+        "Launch app and verify startup completes",
+        "Check console logs for vector generation",
+        "Verify 5 vectors created in database",
+        "Test search functionality works"
+      ]
+    },
+    {
+      "step": 2,
+      "action": "delete_photos_from_gallery",
+      "scenario": "scenario_2_deletions",
+      "description": "Delete photos 2 and 4 from iOS Photos app",
+      "validation": [
+        "Delete photo_002 and photo_004 from iOS Photos",
+        "Force-close the app completely",
+        "Relaunch app to trigger vector cleanup",
+        "Check console logs for cleanup activity",
+        "Verify orphaned vectors are removed",
+        "Test search - should not return deleted photos"
+      ]
+    },
+    {
+      "step": 3,
+      "action": "mixed_operations",
+      "scenario": "scenario_3_mixed",
+      "description": "Add new photos and delete one more",
+      "validation": [
+        "Add photo_006 and photo_007 to gallery",
+        "Delete photo_005 from gallery",
+        "Restart app to trigger cleanup",
+        "Verify only photo_005 vector is cleaned (others already cleaned)",
+        "Verify new photos generate vectors",
+        "Test comprehensive search functionality"
+      ]
+    }
+  ],
+  "success_criteria": {
+    "startup_performance": "App starts within 5 seconds",
+    "cleanup_performance": "Vector cleanup completes within 2 seconds",
+    "search_accuracy": "Search returns only existing photos",
+    "no_crashes": "App remains stable throughout testing",
+    "console_logging": "Clear logs show cleanup operations"
+  }
+}

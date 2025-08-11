@@ -1,0 +1,23 @@
+{
+  "pre_test_checklist": [
+    "\u2610 Cloud emulator service account created",
+    "\u2610 iOS simulator selected (iOS 15+ recommended)",
+    "\u2610 Test photos prepared and accessible",
+    "\u2610 App successfully uploaded to testing platform",
+    "\u2610 Console logging enabled for debugging"
+  ],
+  "during_test_checklist": [
+    "\u2610 Record screen for documentation",
+    "\u2610 Monitor console logs in real-time",
+    "\u2610 Take screenshots at each validation step",
+    "\u2610 Note performance metrics (startup time, cleanup time)",
+    "\u2610 Test search functionality after each scenario"
+  ],
+  "post_test_checklist": [
+    "\u2610 Download console logs",
+    "\u2610 Save screen recordings",
+    "\u2610 Document any issues or unexpected behavior",
+    "\u2610 Verify all success criteria met",
+    "\u2610 Prepare test report"
+  ]
+}

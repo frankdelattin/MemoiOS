@@ -1,0 +1,48 @@
+name: Build iOS for Testing
+
+on:
+  workflow_dispatch: # Manual trigger
+  push:
+    branches: [ feature/vector-cleanup-implementation ]
+
+jobs:
+  build-ios:
+    name: Build iOS App for BrowserStack Testing
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+        cache: true
+        
+    - name: Get dependencies
+      run: flutter pub get
+      
+    - name: Build iOS app (debug, no codesign)
+      run: |
+        flutter build ios --debug --no-codesign
+        
+    - name: Create iOS app archive
+      run: |
+        cd ios/build/ios/iphoneos
+        zip -r SnappApp-iOS-Debug.zip Runner.app
+        
+    - name: Upload iOS app artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ios-app-for-testing
+        path: ios/build/ios/iphoneos/SnappApp-iOS-Debug.zip
+        retention-days: 7
+        
+    - name: Build summary
+      run: |
+        echo "🎉 iOS app built successfully!"
+        echo "📱 Download the artifact from GitHub Actions"
+        echo "📤 Upload SnappApp-iOS-Debug.zip to BrowserStack"
+        echo "🧪 Ready for vector cleanup testing!"

@@ -1,0 +1,105 @@
+{
+  "scenario_1_baseline": {
+    "description": "Initial photo set - all photos should have vectors",
+    "photos": [
+      {
+        "id": "photo_001",
+        "name": "sunset_beach.jpg",
+        "size": "1920x1080",
+        "date": "2024-01-15"
+      },
+      {
+        "id": "photo_002",
+        "name": "mountain_hike.jpg",
+        "size": "1920x1080",
+        "date": "2024-01-16"
+      },
+      {
+        "id": "photo_003",
+        "name": "city_skyline.jpg",
+        "size": "1920x1080",
+        "date": "2024-01-17"
+      },
+      {
+        "id": "photo_004",
+        "name": "forest_path.jpg",
+        "size": "1920x1080",
+        "date": "2024-01-18"
+      },
+      {
+        "id": "photo_005",
+        "name": "ocean_waves.jpg",
+        "size": "1920x1080",
+        "date": "2024-01-19"
+      }
+    ]
+  },
+  "scenario_2_deletions": {
+    "description": "After deleting photos 2 and 4 from gallery",
+    "photos": [
+      {
+        "id": "photo_001",
+        "name": "sunset_beach.jpg",
+        "size": "1920x1080",
+        "date": "2024-01-15"
+      },
+      {
+        "id": "photo_003",
+        "name": "city_skyline.jpg",
+        "size": "1920x1080",
+        "date": "2024-01-17"
+      },
+      {
+        "id": "photo_005",
+        "name": "ocean_waves.jpg",
+        "size": "1920x1080",
+        "date": "2024-01-19"
+      }
+    ],
+    "deleted_photos": [
+      "photo_002",
+      "photo_004"
+    ],
+    "expected_orphaned_vectors": [
+      "photo_002",
+      "photo_004"
+    ]
+  },
+  "scenario_3_mixed": {
+    "description": "After adding new photos and deleting one more",
+    "photos": [
+      {
+        "id": "photo_001",
+        "name": "sunset_beach.jpg",
+        "size": "1920x1080",
+        "date": "2024-01-15"
+      },
+      {
+        "id": "photo_003",
+        "name": "city_skyline.jpg",
+        "size": "1920x1080",
+        "date": "2024-01-17"
+      },
+      {
+        "id": "photo_006",
+        "name": "lake_reflection.jpg",
+        "size": "1920x1080",
+        "date": "2024-01-20"
+      },
+      {
+        "id": "photo_007",
+        "name": "desert_sunset.jpg",
+        "size": "1920x1080",
+        "date": "2024-01-21"
+      }
+    ],
+    "deleted_photos": [
+      "photo_002",
+      "photo_004",
+      "photo_005"
+    ],
+    "expected_orphaned_vectors": [
+      "photo_005"
+    ]
+  }
+}
