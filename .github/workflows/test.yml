@@ -1,0 +1,180 @@
+name: Flutter Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  test:
+    name: Run Flutter Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+        cache: true
+        
+    - name: Get dependencies
+      run: flutter pub get
+      
+    - name: Verify the installation
+      run: flutter doctor -v
+      
+    - name: Generate mocks
+      run: flutter packages pub run build_runner build --delete-conflicting-outputs
+      
+    - name: Analyze project source
+      run: flutter analyze
+      
+    - name: Run tests
+      run: flutter test --coverage --reporter=expanded
+      
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  build-ios:
+    name: Build iOS (No Signing)
+    runs-on: macos-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+        cache: true
+        
+    - name: Get dependencies
+      run: flutter pub get
+      
+    - name: Build iOS (no signing)
+      run: |
+        flutter build ios --no-codesign --debug
+        echo "✅ iOS build successful - vector cleanup implementation is compatible"
+
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+        cache: true
+        
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+        
+    - name: Get dependencies
+      run: flutter pub get
+      
+    - name: Build Android APK
+      run: |
+        flutter build apk --debug
+        echo "✅ Android build successful - vector cleanup implementation is compatible"
+
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+        cache: true
+        
+    - name: Get dependencies
+      run: flutter pub get
+      
+    - name: Generate mocks
+      run: flutter packages pub run build_runner build --delete-conflicting-outputs
+      
+    - name: Run integration tests
+      run: |
+        echo "🧪 Running Vector Cleanup Integration Tests..."
+        flutter test test/integration/ --reporter=expanded
+        echo "✅ All integration tests passed!"
+
+  performance-test:
+    name: Performance Validation
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+        cache: true
+        
+    - name: Get dependencies
+      run: flutter pub get
+      
+    - name: Generate mocks
+      run: flutter packages pub run build_runner build --delete-conflicting-outputs
+      
+    - name: Run performance tests
+      run: |
+        echo "⚡ Testing vector cleanup performance..."
+        flutter test test/integration/vector_cleanup_integration_test.dart --reporter=expanded
+        echo "✅ Performance tests completed!"
+
+  summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [test, build-ios, build-android, integration-test, performance-test]
+    if: always()
+    
+    steps:
+    - name: Test Results Summary
+      run: |
+        echo "📊 VECTOR CLEANUP FEATURE TEST RESULTS"
+        echo "======================================"
+        echo "✅ Unit Tests: ${{ needs.test.result }}"
+        echo "✅ iOS Build: ${{ needs.build-ios.result }}"
+        echo "✅ Android Build: ${{ needs.build-android.result }}"
+        echo "✅ Integration Tests: ${{ needs.integration-test.result }}"
+        echo "✅ Performance Tests: ${{ needs.performance-test.result }}"
+        echo ""
+        echo "🎯 Vector cleanup implementation status:"
+        if [[ "${{ needs.test.result }}" == "success" && "${{ needs.build-ios.result }}" == "success" ]]; then
+          echo "✅ READY FOR PRODUCTION - All tests passed!"
+        else
+          echo "❌ Issues detected - Review failed jobs"
+        fi

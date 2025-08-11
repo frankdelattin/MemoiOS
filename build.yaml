@@ -1,0 +1,10 @@
+targets:
+  $default:
+    builders:
+      mockito|mockBuilder:
+        options:
+          # Generate mocks for our test files
+          mock_generation_mode: "strict"
+        generate_for:
+          - test/**_test.dart
+          - test/integration/**_test.dart
