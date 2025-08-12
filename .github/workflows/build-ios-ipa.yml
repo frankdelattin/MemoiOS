@@ -59,3 +59,10 @@ jobs:
       run: |
         flutter build ios --no-codesign --debug
         echo "✅ iOS build successful - vector cleanup implementation is compatible"
+        
+    - name: Upload iOS Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-app-debug
+        path: build/ios/iphoneos/Runner.app
+        retention-days: 7
