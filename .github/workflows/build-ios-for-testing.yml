@@ -35,13 +35,21 @@ jobs:
         mkdir -p assets/models/tokenizers
         
         # Download the exact same models used in original Memojo
-        # Visual model for image encoding (CLIP ViT-B/32)
+        # Visual model for image encoding (CLIP ViT-B/32) - both versions
         curl -L -o assets/models/nlp_visualize_opset3.onnx \
+          "https://clip-as-service.s3.us-east-2.amazonaws.com/models/onnx/ViT-B-32/visual.onnx" || \
+        echo "⚠️ Visual opset3 model download failed"
+        
+        curl -L -o assets/models/nlp_visualize.onnx \
           "https://clip-as-service.s3.us-east-2.amazonaws.com/models/onnx/ViT-B-32/visual.onnx" || \
         echo "⚠️ Visual model download failed"
         
-        # Text model for text encoding (CLIP ViT-B/32)
+        # Text model for text encoding (CLIP ViT-B/32) - both versions
         curl -L -o assets/models/nlp_textual_opset3.onnx \
+          "https://clip-as-service.s3.us-east-2.amazonaws.com/models/onnx/ViT-B-32/textual.onnx" || \
+        echo "⚠️ Text opset3 model download failed"
+        
+        curl -L -o assets/models/nlp_textual.onnx \
           "https://clip-as-service.s3.us-east-2.amazonaws.com/models/onnx/ViT-B-32/textual.onnx" || \
         echo "⚠️ Text model download failed"
         
