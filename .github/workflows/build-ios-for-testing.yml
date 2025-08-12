@@ -37,31 +37,36 @@ jobs:
         curl -L -o assets/models/nlp_textual.onnx https://clip-as-service.s3.us-east-2.amazonaws.com/models/onnx/ViT-B-32/textual.onnx
         curl -L -o assets/models/tokenizers/nlp_textual_tokenizer.txt.gz https://github.com/openai/CLIP/raw/main/clip/bpe_simple_vocab_16e6.txt.gz
         
-    - name: Build iOS app (debug, no codesign)
+    - name: Build iOS app
       run: |
-        echo "Starting iOS build..."
-        flutter build ios --debug --no-codesign --verbose
+        echo "Building iOS app..."
         
-        # Check if build actually succeeded by looking for Runner.app
-        if [ ! -d "build/ios/Debug-iphoneos/Runner.app" ] && [ ! -d "build/ios/iphoneos/Runner.app" ]; then
-          echo "❌ iOS build failed - no Runner.app created"
-          echo "Checking for common iOS build issues..."
+        # Verify ONNX models are present before building
+        echo "Verifying ONNX models are present:"
+        ls -la assets/models/
+        du -h assets/models/*
+        
+        # Build iOS app in release mode for better optimization
+        flutter build ios --release --no-codesign
+        
+        # Check if build succeeded
+        if [ ! -d "build/ios/Release-iphoneos/Runner.app" ]; then
+          echo "❌ iOS build failed - no Runner.app found"
+          echo "Checking all possible build locations:"
+          find . -name "Runner.app" -type d 2>/dev/null || echo "No Runner.app found anywhere"
+          find . -name "*.app" -type d 2>/dev/null || echo "No .app files found"
+          ls -la build/ 2>/dev/null || echo "No build directory"
           
-          # Check if iOS project exists
-          if [ ! -f "ios/Runner.xcodeproj/project.pbxproj" ]; then
-            echo "❌ iOS project files missing"
-          fi
-          
-          # Check for CocoaPods issues
+          # Check for CocoaPods issues and retry
           if [ ! -f "ios/Podfile.lock" ]; then
             echo "⚠️ Podfile.lock missing - running pod install"
             cd ios && pod install && cd ..
             echo "Retrying iOS build after pod install..."
-            flutter build ios --debug --no-codesign --verbose
+            flutter build ios --release --no-codesign
           fi
           
           # Final check
-          if [ ! -d "build/ios/Debug-iphoneos/Runner.app" ] && [ ! -d "build/ios/iphoneos/Runner.app" ]; then
+          if [ ! -d "build/ios/Release-iphoneos/Runner.app" ]; then
             echo "❌ iOS build still failed after pod install"
             exit 1
           fi
@@ -69,42 +74,46 @@ jobs:
         
         echo "✅ iOS build completed successfully"
         
-    - name: Verify build output and create archive
-      run: |
-        echo "Checking build output directories..."
-        find . -name "Runner.app" -type d || echo "Runner.app not found"
-        ls -la build/ || echo "build/ not found"
+        # Set app path
+        APP_PATH="build/ios/Release-iphoneos/Runner.app"
+        echo "Found Runner.app at: $APP_PATH"
         
-        # Check different possible locations for Runner.app
-        if [ -d "build/ios/Debug-iphoneos/Runner.app" ]; then
-          echo "Found Runner.app in build/ios/Debug-iphoneos/"
-          cd build/ios/Debug-iphoneos
-          zip -r SnappApp-iOS-Debug.zip Runner.app
-        elif [ -d "build/ios/iphoneos/Runner.app" ]; then
-          echo "Found Runner.app in build/ios/iphoneos/"
-          cd build/ios/iphoneos
-          zip -r SnappApp-iOS-Debug.zip Runner.app
-        elif [ -d "ios/build/ios/iphoneos/Runner.app" ]; then
-          echo "Found Runner.app in ios/build/ios/iphoneos/"
-          cd ios/build/ios/iphoneos
-          zip -r SnappApp-iOS-Debug.zip Runner.app
-        elif [ -d "build/ios/iphonesimulator/Runner.app" ]; then
-          echo "Found Runner.app in build/ios/iphonesimulator/"
-          cd build/ios/iphonesimulator
-          zip -r SnappApp-iOS-Debug.zip Runner.app
-        else
-          echo "❌ Runner.app not found in any expected location"
-          echo "Available directories:"
-          find . -name "*.app" -type d || echo "No .app directories found"
-          exit 1
-        fi
+        # Verify models are bundled in the app
+        echo "Verifying ONNX models are bundled in app:"
+        find "$APP_PATH" -name "*.onnx" -exec ls -la {} \; || echo "No ONNX files found in app"
+        find "$APP_PATH" -name "*tokenizer*" -exec ls -la {} \; || echo "No tokenizer files found in app"
+        
+        # Get app size
+        APP_SIZE=$(du -sh "$APP_PATH" | cut -f1)
+        echo "Runner.app size: $APP_SIZE"
+        
+        # Create Payload directory for IPA (required for BrowserStack)
+        mkdir -p Payload
+        cp -r "$APP_PATH" Payload/
+        
+        # Create IPA file
+        zip -r "SnappApp-iOS-Debug.ipa" Payload/
+        
+        # Also create zip for fallback
+        cd build/ios/Release-iphoneos
+        zip -r "../../../SnappApp-iOS-Debug.zip" Runner.app
+        cd ../../..
+        
+        echo "Created artifacts:"
+        ls -la SnappApp-iOS-Debug.ipa
+        ls -la SnappApp-iOS-Debug.zip
+        
+        # Final size check
+        IPA_SIZE=$(du -sh SnappApp-iOS-Debug.ipa | cut -f1)
+        echo "Final IPA size: $IPA_SIZE (should be ~400MB with ONNX models)"
         
     - name: Upload iOS app artifact
       uses: actions/upload-artifact@v4
       with:
         name: ios-app-for-testing
         path: |
-          build/ios/Debug-iphoneos/SnappApp-iOS-Debug.zip
+          SnappApp-iOS-Debug.ipa
+          SnappApp-iOS-Debug.zip
           build/ios/iphoneos/SnappApp-iOS-Debug.zip
           ios/build/ios/iphoneos/SnappApp-iOS-Debug.zip
         retention-days: 7
