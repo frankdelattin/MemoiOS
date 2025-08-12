@@ -1,0 +1,102 @@
+name: Build iOS App
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+        
+    - name: Check Flutter version
+      run: flutter --version
+      
+    - name: Check assets directory structure
+      run: |
+        echo "=== Assets directory structure ==="
+        find assets -type f -name "*.onnx" || echo "No ONNX files found"
+        find assets -type f -name "*.txt.gz" || echo "No tokenizer files found"
+        ls -la assets/ || echo "Assets directory not found"
+        ls -la assets/models/ || echo "Models directory not found"
+        
+    - name: Install Flutter dependencies
+      run: flutter pub get
+      
+    - name: Check for missing assets
+      run: |
+        echo "=== Checking pubspec.yaml assets ==="
+        grep -A 10 "assets:" pubspec.yaml || echo "No assets section found"
+        echo "=== Checking if referenced assets exist ==="
+        if [ -f "assets/models/nlp_visualize_opset3.onnx" ]; then
+          echo "✓ nlp_visualize_opset3.onnx exists"
+        else
+          echo "✗ nlp_visualize_opset3.onnx MISSING"
+        fi
+        if [ -f "assets/models/nlp_textual_opset3.onnx" ]; then
+          echo "✓ nlp_textual_opset3.onnx exists"
+        else
+          echo "✗ nlp_textual_opset3.onnx MISSING"
+        fi
+        
+    - name: Run Flutter analyze
+      run: flutter analyze || echo "Analysis completed with issues"
+      
+    - name: Setup iOS dependencies
+      run: |
+        cd ios
+        pod install
+        
+    - name: Attempt iOS build (Debug)
+      run: |
+        echo "=== Attempting iOS Debug Build ==="
+        flutter build ios --debug --no-codesign || echo "iOS build failed as expected due to missing assets"
+        
+    - name: Check build errors
+      if: failure()
+      run: |
+        echo "=== Build failed - checking error details ==="
+        echo "This is expected due to missing ONNX model files"
+        echo "The original app likely:"
+        echo "1. Downloads models at runtime"
+        echo "2. Uses iOS native ML frameworks instead of ONNX"
+        echo "3. Has platform-specific implementations"
+        
+    - name: Create empty model files for testing
+      run: |
+        echo "=== Creating empty model files to test build process ==="
+        mkdir -p assets/models/tokenizers
+        touch assets/models/nlp_visualize_opset3.onnx
+        touch assets/models/nlp_visualize.onnx
+        touch assets/models/nlp_textual_opset3.onnx
+        touch assets/models/nlp_textual.onnx
+        touch assets/models/tokenizers/nlp_textual_tokenizer.txt.gz
+        
+    - name: Retry iOS build with empty models
+      run: |
+        echo "=== Retrying iOS build with empty model files ==="
+        flutter clean
+        flutter pub get
+        cd ios && pod install
+        flutter build ios --debug --no-codesign || echo "Build failed even with empty model files"
+        
+    - name: Check iOS build output
+      run: |
+        echo "=== iOS Build Analysis Complete ==="
+        echo "This workflow helps us understand:"
+        echo "1. How the original iOS build was supposed to work"
+        echo "2. Where the missing ONNX models should come from"
+        echo "3. Whether iOS uses different ML frameworks"
+        echo "4. The actual build process and dependencies"

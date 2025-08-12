@@ -1,0 +1,70 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:5908992832202756524",
+      "lastPropertyId": "7:7514494939240520596",
+      "name": "ImageVectorsBox",
+      "properties": [
+        {
+          "id": "1:3712759438537636508",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:7058504694166166489",
+          "name": "imageId",
+          "type": 9,
+          "flags": 34848,
+          "indexId": "3:8673467694969654572"
+        },
+        {
+          "id": "3:8899856586097855828",
+          "name": "vectors",
+          "type": 28,
+          "flags": 8,
+          "indexId": "2:4612633873467756555"
+        },
+        {
+          "id": "4:6652319062190346408",
+          "name": "createdAt",
+          "type": 10
+        },
+        {
+          "id": "6:3680644255042233867",
+          "name": "dbStatus",
+          "type": 6,
+          "flags": 8,
+          "indexId": "5:3822029451332487383"
+        },
+        {
+          "id": "7:7514494939240520596",
+          "name": "imageModifiedDate",
+          "type": 6,
+          "flags": 8,
+          "indexId": "6:9038493900948950150"
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "1:5908992832202756524",
+  "lastIndexId": "6:9038493900948950150",
+  "lastRelationId": "0:0",
+  "lastSequenceId": "0:0",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [
+    1782546292823893619,
+    4878951778600069285
+  ],
+  "retiredPropertyUids": [
+    143039642065804021
+  ],
+  "retiredRelationUids": [],
+  "version": 1
+}
