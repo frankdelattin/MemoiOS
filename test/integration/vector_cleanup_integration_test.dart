@@ -20,11 +20,13 @@ void main() {
       mockImageVectorsRepository = MockImageVectorsRepository();
       mockImageService = MockImageService();
       mockOnnxRuntimeService = MockOnnxRuntimeService();
+      mockCacheRepository = MockCacheRepository();
       
       vectorService = VectorService(
         imageVectorsRepository: mockImageVectorsRepository,
         imageService: mockImageService,
         onnxRuntimeService: mockOnnxRuntimeService,
+        cacheRepository: mockCacheRepository,
       );
     });
 

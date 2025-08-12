@@ -5,29 +5,33 @@ import 'package:mockito/annotations.dart';
 import 'package:snapp_app/data/enums/image_vector_status.dart';
 import 'package:snapp_app/data/image_vectors_box.dart';
 import 'package:snapp_app/repositories/image_vectors_repository.dart';
+import 'package:snapp_app/repositories/cache_repository.dart';
 import 'package:snapp_app/services/image_service.dart';
 import 'package:snapp_app/services/onnx_runtime_service.dart';
 import 'package:snapp_app/services/vector_service.dart';
 
 import 'vector_service_test.mocks.dart';
 
-@GenerateMocks([ImageVectorsRepository, ImageService, OnnxRuntimeService])
+@GenerateMocks([ImageVectorsRepository, ImageService, OnnxRuntimeService, CacheRepository])
 void main() {
   group('VectorService Tests', () {
     late VectorService vectorService;
     late MockImageVectorsRepository mockImageVectorsRepository;
     late MockImageService mockImageService;
     late MockOnnxRuntimeService mockOnnxRuntimeService;
+    late MockCacheRepository mockCacheRepository;
 
     setUp(() {
       mockImageVectorsRepository = MockImageVectorsRepository();
       mockImageService = MockImageService();
       mockOnnxRuntimeService = MockOnnxRuntimeService();
+      mockCacheRepository = MockCacheRepository();
       
       vectorService = VectorService(
         imageVectorsRepository: mockImageVectorsRepository,
         imageService: mockImageService,
         onnxRuntimeService: mockOnnxRuntimeService,
+        cacheRepository: mockCacheRepository,
       );
     });
 
