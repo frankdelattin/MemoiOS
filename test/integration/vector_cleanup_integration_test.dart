@@ -2,19 +2,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:snapp_app/repositories/image_vectors_repository.dart';
+import 'package:snapp_app/repositories/cache/cache_repository.dart';
 import 'package:snapp_app/services/image_service.dart';
 import 'package:snapp_app/services/onnx_runtime_service.dart';
 import 'package:snapp_app/services/vector_service.dart';
 
 import '../services/vector_service_test.mocks.dart';
 
-@GenerateMocks([ImageVectorsRepository, ImageService, OnnxRuntimeService])
+@GenerateMocks([ImageVectorsRepository, ImageService, OnnxRuntimeService, CacheRepository])
 void main() {
   group('Vector Cleanup Integration Tests', () {
     late VectorService vectorService;
     late MockImageVectorsRepository mockImageVectorsRepository;
     late MockImageService mockImageService;
     late MockOnnxRuntimeService mockOnnxRuntimeService;
+    late MockCacheRepository mockCacheRepository;
 
     setUp(() {
       mockImageVectorsRepository = MockImageVectorsRepository();
