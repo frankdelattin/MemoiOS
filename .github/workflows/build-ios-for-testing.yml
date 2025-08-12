@@ -1,0 +1,143 @@
+name: Build iOS for Testing
+
+on:
+  workflow_dispatch: # Manual trigger
+  push:
+    branches: [ feature/vector-cleanup-clean ]
+
+jobs:
+  build-ios:
+    name: Build iOS App for BrowserStack Testing
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.27.0'
+        channel: 'stable'
+        cache: true
+        
+    - name: Get dependencies
+      run: flutter pub get
+      
+    - name: Generate ObjectBox files
+      run: |
+        dart run build_runner build --delete-conflicting-outputs
+        
+    - name: Download ONNX models
+      run: |
+        # Download ONNX models at build time (original Memojo approach)
+        echo "Downloading ONNX models for build..."
+        mkdir -p assets/models/tokenizers
+        
+        # Download the exact same models used in original Memojo
+        # Visual model for image encoding (CLIP ViT-B/32)
+        curl -L -o assets/models/nlp_visualize_opset3.onnx \
+          "https://clip-as-service.s3.us-east-2.amazonaws.com/models/onnx/ViT-B-32/visual.onnx" || \
+        echo "⚠️ Visual model download failed"
+        
+        # Text model for text encoding (CLIP ViT-B/32)
+        curl -L -o assets/models/nlp_textual_opset3.onnx \
+          "https://clip-as-service.s3.us-east-2.amazonaws.com/models/onnx/ViT-B-32/textual.onnx" || \
+        echo "⚠️ Text model download failed"
+        
+        # Tokenizer for text processing
+        curl -L -o assets/models/tokenizers/nlp_textual_tokenizer.txt.gz \
+          "https://github.com/openai/CLIP/raw/main/clip/bpe_simple_vocab_16e6.txt.gz" || \
+        echo "⚠️ Tokenizer download failed"
+        
+        # Verify downloads and sizes
+        echo "Model files downloaded:"
+        ls -la assets/models/
+        du -h assets/models/*
+        
+    - name: Build iOS app
+      run: |
+        echo "Building iOS app..."
+        
+        # Verify ONNX models are present before building
+        echo "Verifying ONNX models are present:"
+        ls -la assets/models/
+        du -h assets/models/*
+        
+        # Build iOS app for testing (debug build for BrowserStack)
+        echo "Building iOS app for testing..."
+        flutter build ios --debug --simulator
+        
+        # Check if build succeeded
+        if [ ! -d "build/ios/Debug-iphonesimulator/Runner.app" ]; then
+          echo "❌ iOS build failed - no Runner.app found"
+          echo "Checking all possible build locations:"
+          find . -name "Runner.app" -type d 2>/dev/null || echo "No Runner.app found anywhere"
+          find . -name "*.app" -type d 2>/dev/null || echo "No .app files found"
+          ls -la build/ 2>/dev/null || echo "No build directory"
+          
+          # Check for CocoaPods issues and retry
+          if [ ! -f "ios/Podfile.lock" ]; then
+            echo "⚠️ Podfile.lock missing - running pod install"
+            cd ios && pod install && cd ..
+            echo "Retrying iOS build after pod install..."
+            flutter build ios --debug --simulator
+          fi
+          
+          # Final check
+          if [ ! -d "build/ios/Debug-iphonesimulator/Runner.app" ]; then
+            echo "❌ iOS build still failed after pod install"
+            exit 1
+          fi
+        fi
+        
+        echo "✅ iOS build completed successfully"
+        
+        # Set app path (simulator build location)
+        APP_PATH="build/ios/Debug-iphonesimulator/Runner.app"
+        echo "Found Runner.app at: $APP_PATH"
+        
+        # Verify models are bundled in the app
+        echo "Verifying ONNX models are bundled in app:"
+        find "$APP_PATH" -name "*.onnx" -exec ls -la {} \; || echo "No ONNX files found in app"
+        find "$APP_PATH" -name "*tokenizer*" -exec ls -la {} \; || echo "No tokenizer files found in app"
+        
+        # Get app size
+        APP_SIZE=$(du -sh "$APP_PATH" | cut -f1)
+        echo "Runner.app size: $APP_SIZE"
+        
+        # Create Payload directory for IPA (required for BrowserStack)
+        mkdir -p Payload
+        cp -r "$APP_PATH" Payload/
+        
+        # Create IPA file
+        zip -r "SnappApp-iOS-Debug.ipa" Payload/
+        
+        # Also create zip for fallback
+        cd build/ios/Debug-iphonesimulator
+        zip -r "../../../SnappApp-iOS-Debug.zip" Runner.app
+        cd ../../..
+        
+        echo "Created artifacts:"
+        ls -la SnappApp-iOS-Debug.ipa
+        ls -la SnappApp-iOS-Debug.zip
+        
+        # Final size check
+        IPA_SIZE=$(du -sh SnappApp-iOS-Debug.ipa | cut -f1)
+        echo "Final IPA size: $IPA_SIZE (should be ~300MB with ONNX models)"
+        
+    - name: Upload iOS app artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-app-for-testing
+        path: |
+          SnappApp-iOS-Debug.ipa
+          SnappApp-iOS-Debug.zip
+        retention-days: 7
+        
+    - name: Build summary
+      run: |
+        echo "🎉 iOS app built successfully!"
+        echo "📱 Download the artifact from GitHub Actions"
+        echo "📤 Upload SnappApp-iOS-Debug.zip to BrowserStack"
+        echo "🧪 Ready for vector cleanup testing!"
