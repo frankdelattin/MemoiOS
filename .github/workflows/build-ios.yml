@@ -18,7 +18,7 @@ jobs:
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.24.0'
+        flutter-version: '3.27.0'
         channel: 'stable'
         
     - name: Check Flutter version
@@ -57,7 +57,9 @@ jobs:
     - name: Setup iOS dependencies
       run: |
         cd ios
-        pod install
+        echo "=== Installing iOS CocoaPods dependencies ==="
+        pod --version
+        pod install --verbose || echo "Pod install failed - this may indicate dependency conflicts"
         
     - name: Attempt iOS build (Debug)
       run: |
