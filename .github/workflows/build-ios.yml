@@ -92,7 +92,48 @@ jobs:
         flutter clean
         flutter pub get
         cd ios && pod install
-        flutter build ios --debug --no-codesign || echo "Build failed even with empty model files"
+        echo "=== Starting iOS build ==="
+        flutter build ios --debug --no-codesign --verbose
+        echo "=== Build completed, checking output ==="
+        ls -la build/ios/ || echo "No iOS build directory"
+        find build -name "*.app" -type d || echo "No .app bundles found"
+        
+    - name: Create IPA for testing
+      if: success()
+      run: |
+        echo "=== Creating IPA for device testing ==="
+        echo "Checking build output structure..."
+        find . -name "Runner.app" -type d || echo "Runner.app not found"
+        ls -la build/ios/ || echo "iOS build directory not found"
+        
+        # Check if we have the iOS build output
+        if [ -d "build/ios/iphoneos/Runner.app" ]; then
+          echo "Found iOS build output, creating IPA..."
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload/
+          zip -r MemoiOS-debug.ipa Payload/
+          echo "✓ IPA created: MemoiOS-debug.ipa"
+          ls -la MemoiOS-debug.ipa
+        elif [ -d "build/ios/iphonesimulator/Runner.app" ]; then
+          echo "Found iOS Simulator build, creating IPA from simulator build..."
+          mkdir -p Payload
+          cp -r build/ios/iphonesimulator/Runner.app Payload/
+          zip -r MemoiOS-debug.ipa Payload/
+          echo "✓ IPA created from simulator build: MemoiOS-debug.ipa"
+          ls -la MemoiOS-debug.ipa
+        else
+          echo "❌ No iOS build output found"
+          echo "Available build outputs:"
+          find build -name "*.app" -type d 2>/dev/null || echo "No .app bundles found"
+        fi
+        
+    - name: Upload IPA artifact
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: MemoiOS-debug-ipa
+        path: MemoiOS-debug.ipa
+        retention-days: 30
         
     - name: Check iOS build output
       run: |
